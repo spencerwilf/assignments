@@ -8,14 +8,36 @@ with open('camelot_router_abi.json', 'r') as abi_file:
 with open('pool_contract_abi.json', 'r') as pool_abi_file:
     pool_abi = json.load(pool_abi_file)
 
+with open('erc20_abi.json', 'r') as erc20_abi_file:
+    erc20_abi = json.load(erc20_abi_file)
+
 # Establishing Arbitrum RPC connection
 provider = Web3(Web3.HTTPProvider("https://arb-mainnet.g.alchemy.com/v2/C7EDrV8VssNi0A0Esjv01xqB3P3oizpN"))
 
+# Camelot factory contract needed to get token pool pairs
 factory_contract = provider.eth.contract(
     address="0x1a3c9B1d2F0529D97f2afC5136Cc23e58f1FD35B",
     abi=pool_abi
 )
 
+# Camelot router
+camelot_router_contract = provider.eth.contract(
+    address="0x1F721E2E82F6676FCE4eA07A5958cF098D339e18",
+    abi=pool_abi
+)
+
+def get_token_decimals(token_address):
+    checksum_address = Web3.to_checksum_address(token_address)
+    token_contract = provider.eth.contract(address=checksum_address, abi=erc20_abi)  # Use checksummed address here
+    decimals = token_contract.functions.decimals().call()
+    return decimals
+
+# Example for adjusting an amount
+def adjust_token_amount(raw_amount, decimals):
+    return raw_amount / (10 ** decimals)
+
+
+# Function to call `factory_contract` to get the token pool address
 def get_pool_by_pair(token_address1, token_address2):
     pool_address = factory_contract.functions.poolByPair(
         Web3.to_checksum_address(token_address1),
@@ -23,89 +45,99 @@ def get_pool_by_pair(token_address1, token_address2):
     ).call()
     return pool_address
 
+# Generates Swap event signature
 def get_swap_event_topic():
     swap_event_signature = "Swap(address,address,int256,int256,uint160,uint128,int24)"
     swap_event_topic = provider.keccak(text=swap_event_signature).hex()
     return swap_event_topic
 
-def extract_transfer_logs(receipt, trader_address, swap_contract_address):
-    transfer_event_topic = get_transfer_event_topic()
-    transfers_to_trader = []
-    initial_token = None  # To store the token address that the trader initially sends
-
-    for log in receipt.logs:
-        # Check if it's a Transfer event
-        if log.topics[0].hex() == transfer_event_topic:
-            # Extract 'from' and 'to' addresses from the topics
-            from_address = '0x' + log.topics[1].hex()[-40:]
-            to_address = '0x' + log.topics[2].hex()[-40:]
-            
-            # The contract emitting this is the token contract
-            token_address = log.address
-            # Decode the transferred amount from the data field
-            amount_hex = log['data'].hex() if isinstance(log['data'], bytes) else log['data']
-            amount = int(amount_hex, 16)
-            
-            # Check if the trader is the sender, which means it's the token being swapped
-            if from_address.lower() == trader_address.lower() and to_address.lower() == swap_contract_address.lower():
-                initial_token = token_address
-            
-            # If the 'to' address is the trader, it's the token being received
-            elif to_address.lower() == trader_address.lower():
-                transfers_to_trader.append((token_address, amount))
-
-    return initial_token, transfers_to_trader
-
-
+# Generates Transfer event signature: used to derive the tokens transferred to and from a user to ascertain the token pool address
 def get_transfer_event_topic():
-    swap_event_signature = "Transfer(address,address,uint256)"
-    swap_event_topic = provider.keccak(text=swap_event_signature).hex()
-    return swap_event_topic
+    transfer_event_signature = "Transfer(address,address,uint256)"
+    transfer_event_topic = provider.keccak(text=transfer_event_signature).hex()
+    return transfer_event_topic
 
-
-# Function to decode the data part of the log
+# Parses the data fields in swap logs
 def parse_log_data(log):
     types = ['int256', 'int256', 'uint160', 'uint128', 'int24']
     decoded_data = provider.codec.decode(types, log['data'])
     return decoded_data
 
 
-# Function to fetch and decode swap logs
-def get_swap_logs(block_number):
-    swap_logs = []
+def get_swaps_for_block(block_number):
+    swap_topic = get_swap_event_topic()
+    transfer_topic = get_transfer_event_topic()
+
     block = provider.eth.get_block(block_number, full_transactions=True)
-    swap_contract_address = "0x1F721E2E82F6676FCE4eA07A5958cF098D339e18"  # Replace with your swap contract address
+    block_timestamp = block.timestamp
 
+    swaps = []
+    
+    # block.transactions: gets transaction objects included in a block
     for tx in block.transactions:
+
+        # receipt: returns dictionary with information about the transaction
         receipt = provider.eth.get_transaction_receipt(tx.hash)
+        # trader_address: address that originated the transaction
         trader_address = receipt['from'].lower()
-        
-        # Extract initial token sent and transfer events to the trader
-        initial_token, transfers_to_trader = extract_transfer_logs(receipt, trader_address, swap_contract_address)
 
-        # Process each token received by the trader to find pool addresses
-        for token_address, amount in transfers_to_trader:
-            if initial_token:
-                pool_address = get_pool_by_pair(initial_token, token_address)
-            else:
-                pool_address = "Initial token not found"
+        token_received_address = None
+        token_sent_address = None
 
-            log_info = {
-                'block_number': block_number,
-                'block_hash': block.hash.hex(),
-                'transaction_hash': tx.hash.hex(),
-                'trader_address': trader_address,
-                'token_address': token_address,
-                'amount': amount,
-                'pool_address': pool_address,
-                'timestamp': provider.eth.get_block(block_number).timestamp
-            }
-            swap_logs.append(log_info)
+        # Iterate through the transactions logs to find Swap events
+        for log in receipt.logs:
 
-    return swap_logs
+            if log.topics[0].hex() == swap_topic:
+                # Reformatting the eth address to remove padding
+                # log.topics[1] is the sender of the swap
+                sender_address = '0x' + log.topics[1].hex()[-40:]
+
+                # Looking for logs that originated from the Camelot router
+                if sender_address.lower() == camelot_router_contract.address.lower():
+                    # Looking for the Transfer event where the user received tokens (to ascertain the token pool)
+                    for transfer_log in receipt.logs:
+                        if transfer_log.topics[0].hex() == transfer_topic and '0x' + transfer_log.topics[2].hex()[-40:].lower() == trader_address:
+                            token_received_address = transfer_log.address.lower()
+
+                    # Looking for the Transfer event where the user is the sender
+                    for transfer_log in receipt.logs:
+                        if transfer_log.topics[0].hex() == transfer_topic and '0x' + transfer_log.topics[1].hex()[-40:].lower() == trader_address:
+                            token_sent_address = transfer_log.address.lower()
+                            break  
+
+                    if token_received_address and token_sent_address:
+                        # Use the found addresses to get the pool address
+                        pool_address = get_pool_by_pair(token_sent_address, token_received_address)
+
+                        decoded_data = parse_log_data(log)
+
+                        token_received_decimals = get_token_decimals(token_received_address)
+                        token_sent_decimals = get_token_decimals(token_sent_address)
+
+                        adjusted_amount_received = adjust_token_amount(decoded_data[0], token_received_decimals)
+                        adjusted_amount_sent = adjust_token_amount(decoded_data[1], token_sent_decimals)
+
+                        swap_details = {
+                            "Block number": log.blockNumber,
+                            "Block hash": log.blockHash.hex(),
+                            "Transaction hash": log.transactionHash.hex(),
+                            "Trader address": trader_address,
+                            "Token address": token_received_address,
+                            "Amount token sent": adjusted_amount_sent,  # Adjust based on the actual event structure
+                            "Amount token received": adjusted_amount_received,
+                            "Pool address": pool_address,
+                            "Block timestamp": block_timestamp
+                            # Include decoded data if necessary
+                        }
+
+                        swaps.append(swap_details)
+                    else:
+                        print(f"Token received by user: {token_received_address} --------- Token sent by user:{token_sent_address}")
+
+    return swaps
 
 
-block_number = 180927732    # Replace with the actual block number
-swaps = get_swap_logs(block_number)
+block_number = 181520103   # Replace with the block number you're interested in
+swaps = get_swaps_for_block(block_number)
 for swap in swaps:
     print(json.dumps(swap, indent=4))
