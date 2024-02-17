@@ -28,9 +28,15 @@ camelot_router_contract = provider.eth.contract(
 
 def get_token_decimals(token_address):
     checksum_address = Web3.to_checksum_address(token_address)
-    token_contract = provider.eth.contract(address=checksum_address, abi=erc20_abi)  # Use checksummed address here
+    token_contract = provider.eth.contract(address=checksum_address, abi=erc20_abi)
     decimals = token_contract.functions.decimals().call()
     return decimals
+
+def get_token_name(token_address):
+    checksum_address = Web3.to_checksum_address(token_address)
+    token_contract = provider.eth.contract(address=checksum_address, abi=erc20_abi)
+    name = token_contract.functions.name().call()
+    return name
 
 # Example for adjusting an amount
 def adjust_token_amount(raw_amount, decimals):
@@ -111,19 +117,22 @@ def get_swaps_for_block(block_number):
 
                         decoded_data = parse_log_data(log)
 
-                        token_received_decimals = get_token_decimals(token_received_address)
+                        # token_received_decimals = get_token_decimals(token_received_address)
                         token_sent_decimals = get_token_decimals(token_sent_address)
 
-                        adjusted_amount_received = adjust_token_amount(decoded_data[0], token_received_decimals)
-                        adjusted_amount_sent = adjust_token_amount(decoded_data[1], token_sent_decimals)
+                        # adjusted_amount_received = adjust_token_amount(decoded_data[0], token_received_decimals)
+                        adjusted_amount_received = adjust_token_amount(decoded_data[1], token_sent_decimals)
+
+                        token_name = get_token_name(token_sent_address)
 
                         swap_details = {
                             "Block number": log.blockNumber,
                             "Block hash": log.blockHash.hex(),
                             "Transaction hash": log.transactionHash.hex(),
                             "Trader address": trader_address,
+                            "Token name": token_name,
                             "Token address": token_received_address,
-                            "Amount token sent": adjusted_amount_sent,  # Adjust based on the actual event structure
+                            # "Amount token sent": adjusted_amount_sent,  # Adjust based on the actual event structurecan you 
                             "Amount token received": adjusted_amount_received,
                             "Pool address": pool_address,
                             "Block timestamp": block_timestamp
@@ -132,12 +141,12 @@ def get_swaps_for_block(block_number):
 
                         swaps.append(swap_details)
                     else:
-                        print(f"Token received by user: {token_received_address} --------- Token sent by user:{token_sent_address}")
+                        print("API issue. Try another block or check back in a few minutes :)")
 
     return swaps
 
 
-block_number = 181520103   # Replace with the block number you're interested in
+block_number = 181521996   # Replace with the block number you're interested in
 swaps = get_swaps_for_block(block_number)
 for swap in swaps:
     print(json.dumps(swap, indent=4))
