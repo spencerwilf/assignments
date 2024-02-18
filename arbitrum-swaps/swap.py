@@ -1,7 +1,6 @@
 from web3 import Web3
 import json
 
-# Reading from the abi file
 with open('camelot_router_abi.json', 'r') as abi_file:
     camelot_router_abi = json.load(abi_file)
 
@@ -11,7 +10,6 @@ with open('pool_contract_abi.json', 'r') as pool_abi_file:
 with open('erc20_abi.json', 'r') as erc20_abi_file:
     erc20_abi = json.load(erc20_abi_file)
 
-# Establishing Arbitrum RPC connection
 provider = Web3(Web3.HTTPProvider("https://arb-mainnet.g.alchemy.com/v2/C7EDrV8VssNi0A0Esjv01xqB3P3oizpN"))
 
 # Camelot factory contract needed to get token pool pairs
