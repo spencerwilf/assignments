@@ -84,7 +84,7 @@ block_number = 5037210
         "Block Hash": "0xa26a2c0eb2d3abab3daabda8ae4216cd1d3c17323163b0cd89ebdc5830efc20d",
         "Timestamp": 1696863767
     }
-]
+    ]
     ```
 
 ### Liquidity pool deployment
@@ -102,5 +102,5 @@ block_number = 5037210
         "Block hash": "0x797ada3c5e19448883200024e2cfc03f6f438067076d7f459f97638139c417ad",
         "Timestamp": 1704655845
     }
-]
+    ]
     ```
