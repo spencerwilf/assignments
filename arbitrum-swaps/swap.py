@@ -88,7 +88,6 @@ def get_swaps_for_block(block_number):
         # Dictionary to hold transfer events, keyed by log index within the transaction
         transfers = {}
         token_received_address = None
-        token_sent_address = None
         lp_address = None
         # Pass to gather transfer events
         for log_index, log in enumerate(receipt.logs):
