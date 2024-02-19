@@ -18,7 +18,7 @@ https://docs.dexscreener.com/api/reference
 
 
 ## Output sample
-
+```
 [
     {
         "Pair address": "EcHXwaRp26ChgAsmfdrVki44XRr8tibwJ17DbsUTiJGe",
@@ -29,3 +29,4 @@ https://docs.dexscreener.com/api/reference
         "DEX": "orca"
     },
 ]
+```
