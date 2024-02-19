@@ -10,6 +10,7 @@ with open('pool_contract_abi.json', 'r') as pool_abi_file:
 with open('erc20_abi.json', 'r') as erc20_abi_file:
     erc20_abi = json.load(erc20_abi_file)
 
+
 provider = Web3(Web3.HTTPProvider("https://arb-mainnet.g.alchemy.com/v2/C7EDrV8VssNi0A0Esjv01xqB3P3oizpN"))
 
 
@@ -18,11 +19,6 @@ camelot_router_contract = provider.eth.contract(
     address=Web3.to_checksum_address("0x1F721E2E82F6676FCE4eA07A5958cF098D339e18"),
     abi=pool_abi
 )
-
-# camelot_lp_contract = provider.eth.contract(
-#     address=Web3.to_checksum_address("0xc873fecbd354f5a56e00e710b90ef4201db2448d"),
-#     abi=camelot_v2_abi
-# )
 
 
 def get_token_decimals(token_address):
