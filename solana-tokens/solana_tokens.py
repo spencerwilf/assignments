@@ -15,7 +15,7 @@ def find_liquidity_pairs(token_address):
 
     for pair in pairs:
         pair_address = pair.get('pairAddress')
-        chain_id = pair.get('chainId', 'sol')  # Default to 'sol' if 'chainId' is not provided
+        chain_id = pair.get('chainId', 'sol')
         pair_response = requests.get(f"https://api.dexscreener.com/latest/dex/pairs/{chain_id}/{pair_address}")
 
         if pair_response.status_code != 200:
@@ -35,6 +35,8 @@ def find_liquidity_pairs(token_address):
 
     return liquidity_pairs_info
 
+# Change to whatever token address you want
 token_address = '4vqYQTjmKjxrWGtbL2tVkbAU1EVAz9JwcYtd2VE3PbVU'
+
 transfers = find_liquidity_pairs(token_address)
 print(json.dumps(transfers, indent=4))
