@@ -17,3 +17,15 @@ https://docs.dexscreener.com/api/reference
     https://api.dexscreener.com/latest/dex/pairs/:chainId/:pairAddresses
 
 
+## Output sample
+
+[
+    {
+        "Pair address": "EcHXwaRp26ChgAsmfdrVki44XRr8tibwJ17DbsUTiJGe",
+        "DEX": "raydium"
+    },
+    {
+        "Pair address": "BnfUT1mjfQ8oG3CmSw4SXmLKJj8QzWEHREGqZcba2KoC",
+        "DEX": "orca"
+    },
+]
