@@ -67,7 +67,6 @@ def parse_log_data(log):
     decoded_data = provider.codec.decode(types, log['data'])
     return decoded_data
 
-
 def get_swaps_for_block(block_number):
     swap_topic = get_swap_event_topic()
     transfer_topic = get_transfer_event_topic()
@@ -112,8 +111,8 @@ def get_swaps_for_block(block_number):
 
                 if token_received_address and token_sent_address:
                     pool_address = get_pool_by_pair(token_sent_address, token_received_address)
-                    token_sent_decimals = get_token_decimals(token_sent_address)  # Corrected to use received token address
-                    adjusted_amount_received = adjust_token_amount(decoded_data[1], token_sent_decimals)  # Use the absolute value for display
+                    token_sent_decimals = get_token_decimals(token_sent_address)
+                    adjusted_amount_received = adjust_token_amount(decoded_data[1], token_sent_decimals)
                     token_name = get_token_name(token_sent_address)
 
                     swap_details = {
@@ -134,7 +133,7 @@ def get_swaps_for_block(block_number):
 
     return swaps
 
-block_number = 182150274   # Replace with the block number you're interested in
+block_number = 182180433    # Replace with the block number you're interested in
 swaps = get_swaps_for_block(block_number)
 for swap in swaps:
     print(json.dumps(swap, indent=4))
