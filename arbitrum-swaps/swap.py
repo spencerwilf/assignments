@@ -37,7 +37,7 @@ def get_token_name(token_address):
     return name
 
 def adjust_token_amount(raw_amount, decimals):
-    adjusted_amount = abs(raw_amount) / (10 ** decimals)
+    adjusted_amount = raw_amount / (10 ** decimals)
     return adjusted_amount
 
 
@@ -75,15 +75,21 @@ def get_swaps_for_block(block_number):
     block_timestamp = block.timestamp
 
     swaps = []
+    unique_txs = set()
     
     # block.transactions: gets transaction objects included in a block
     for tx in block.transactions:
+        
         receipt = provider.eth.get_transaction_receipt(tx.hash)
         trader_address = receipt['from'].lower()
 
+        # take log where user is the sender of tokens—recipient in that address will be the LP address!
+
         # Dictionary to hold transfer events, keyed by log index within the transaction
         transfers = {}
-
+        token_received_address = None
+        token_sent_address = None
+        lp_address = None
         # Pass to gather transfer events
         for log_index, log in enumerate(receipt.logs):
             if log.topics[0].hex() == transfer_topic:
@@ -98,22 +104,22 @@ def get_swaps_for_block(block_number):
         # Now process Swap events
         for log_index, log in enumerate(receipt.logs):
             
-            if log.topics[0].hex() == swap_topic and '0x' + log.topics[1].hex()[-40:] == camelot_router_contract.address.lower():
+            if log.topics[0].hex() == swap_topic:
                 decoded_data = parse_log_data(log)
-                token_received_address = None
-                token_sent_address = None
                 
                 for transfer_log_index, transfer_details in transfers.items():
-                    if transfer_details['to'] == trader_address:
-                        token_received_address = transfer_details['token_address']
                     if transfer_details['from'] == trader_address:
-                        token_sent_address = transfer_details['token_address']
+                        token_received_address = transfer_details['token_address']
+                        lp_address = transfer_details['to']
 
-                if token_received_address and token_sent_address:
-                    pool_address = get_pool_by_pair(token_sent_address, token_received_address)
-                    token_sent_decimals = get_token_decimals(token_sent_address)
-                    adjusted_amount_received = adjust_token_amount(decoded_data[1], token_sent_decimals)
-                    token_name = get_token_name(token_sent_address)
+                if token_received_address and lp_address:
+                    if log.transactionHash.hex() in unique_txs:
+                        continue
+                    unique_txs.add(log.transactionHash.hex())
+            
+                    token_received_decimals = get_token_decimals(token_received_address)
+                    adjusted_amount_received = adjust_token_amount(max(decoded_data[0], decoded_data[1]), token_received_decimals)
+                    token_name = get_token_name(token_received_address)
 
                     swap_details = {
                         "Block number": block_number,
@@ -121,19 +127,18 @@ def get_swaps_for_block(block_number):
                         "Transaction hash": log.transactionHash.hex(),
                         "Trader address": trader_address,
                         "Token name": token_name,
-                        "Token address": token_sent_address,
+                        "Token address": token_received_address,
                         "Amount token received": adjusted_amount_received,
-                        "Pool address": pool_address,
+                        "Pool address": lp_address,
                         "Block timestamp": block_timestamp
                     }
                     swaps.append(swap_details)
                 else:
-                    token_name = get_token_name(token_sent_address)
-                    print(f"Missing token address. Token sent: {token_sent_address}, Token received: {token_received_address}")
+                    print('Tokens not found')
 
     return swaps
 
-block_number = 182180433    # Replace with the block number you're interested in
+block_number = 163872381        # Replace with the block number you're interested in
 swaps = get_swaps_for_block(block_number)
 for swap in swaps:
     print(json.dumps(swap, indent=4))
