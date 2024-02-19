@@ -112,9 +112,9 @@ def get_swaps_for_block(block_number):
                         lp_address = transfer_details['to']
 
                 if token_received_address and lp_address:
-                    if log.transactionHash.hex() in unique_txs:
+                    if receipt.transactionHash.hex() in unique_txs:
                         continue
-                    unique_txs.add(log.transactionHash.hex())
+                    unique_txs.add(receipt.transactionHash.hex())
             
                     token_received_decimals = get_token_decimals(token_received_address)
                     adjusted_amount_received = adjust_token_amount(max(decoded_data[0], decoded_data[1]), token_received_decimals)
