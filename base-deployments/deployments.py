@@ -118,7 +118,7 @@ def get_token_creations_and_pool_deployments(block_number):
     return creations
 
 
-block_number = 5037210    # Replace with the block number you're interested in
+block_number = 8933249    # Replace with the block number you're interested in
 transfers = get_token_creations_and_pool_deployments(block_number)
 print(json.dumps(transfers, indent=4))
 

@@ -1,4 +1,4 @@
-# Solana Pool Information:
+# Solana Pool Information
 
 Given an SPL token mint address, find all associated pools (Raydium, Orca, Serum, etc). Feel
 free to use any JSON RPC methods, external data APIs, etc
