@@ -59,6 +59,7 @@ https://web3py.readthedocs.io/en/stable/
                     token_sent_address = transfer_details['token_address']
     ```
 Using the Transfer logs, we are able to ascertain the information needed to compute the pool address using the `pool` contract. The logic for this computation is below:
+
     ```
         if token_received_address and token_sent_address:
             pool_address = get_pool_by_pair(token_sent_address, token_received_address)
