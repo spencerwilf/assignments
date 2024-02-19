@@ -17,7 +17,7 @@ https://docs.dexscreener.com/api/reference
     https://api.dexscreener.com/latest/dex/pairs/:chainId/:pairAddresses
 
 
-## How to call function
+## How to call the function
 
 At the bottom of the file , change the `token_address` variable to any Solana token address
 ```

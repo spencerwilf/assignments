@@ -10,7 +10,7 @@ hash, pool block hash, pool block number and the paired token in the pool (WETH/
 
 A standard ERC20 ABI (erc20_abi.json) to call ERC20-specific functions to gather token information (symbol, name, etc)
 
-Uniswap V3 Factory ABI to track the creation of new liquidity pools
+Uniswap V3 Factory ABI to track the creation of new liquidity pools (0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1)
 
 ## Resources
 
@@ -61,7 +61,7 @@ As we will be outputting the token symbol and name eventually, we return them he
         token1_name, token1_symbol = get_token_details(token1_address)
     ```
 
-## How to call function
+## How to call the function
 
 At the bottom of the file , change the `block_number` variable to any block number
 ```
