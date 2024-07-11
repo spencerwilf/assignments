@@ -1,6 +1,6 @@
 # Arbitrum Swaps
 
-Write a function in python that takes as input a Arbitrum block number and returns all camelot
+A function in python that takes as input a Arbitrum block number and returns all Camelot
 token swaps on that block. For each token swap include the block number, block hash,
 transaction hash, number of tokens swapped, trader address, token address, token pool
 address and timestamp.

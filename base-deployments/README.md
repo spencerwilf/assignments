@@ -1,6 +1,6 @@
 # Base Token Deployments
 
-Write a function in python that takes as input a Base block number and returns all token and
+A function in python that takes as input a Base block number and returns all token and
 pool deployments. For token deployments, include the symbol, name, deployer address, token
 address, block number, block hash, transaction hash and timestamp. For pool deployments,
 include all of the previous information for the main token and also include the pool transaction
